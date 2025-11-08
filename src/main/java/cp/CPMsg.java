@@ -24,16 +24,22 @@ class CPMsg extends Msg {
         String[] parts = sentence.split("\\s+", 2);
         if(parts.length < 2)
             throw new IllegalMsgException();
-        if(parts[1].startsWith(CPCookieRequestMsg.CP_CREQ_HEADER)) {
+
+        String subSentence = parts[1];
+
+        if(subSentence.startsWith(CPCookieRequestMsg.CP_CREQ_HEADER)) {
             parsedMsg = new CPCookieRequestMsg();
-        } else if(parts[1].startsWith(CPCookieResponseMsg.CP_CRES_HEADER)) {
+        } else if(subSentence.startsWith(CPCookieResponseMsg.CP_CRES_HEADER)) {
             parsedMsg = new CPCookieResponseMsg();
+        } else if (subSentence.startsWith(CPCommandMsg.CP_CMD_HEADER)) {
+            parsedMsg = new CPCommandMsg();
+        } else if (subSentence.startsWith(CPCommandResponseMsg.CP_CMD_RES_HEADER)) {
+            parsedMsg = new CPCommandResponseMsg();
         } else {
             throw new IllegalMsgException();
         }
 
-        parsedMsg = (CPMsg) parsedMsg.parse(parts[1]);
-        return parsedMsg;
+        return parsedMsg.parse(subSentence);
     }
 
 }

@@ -56,7 +56,7 @@ public class CPProtocol extends Protocol {
 
     @Override
     public void send(String s, Configuration config) throws IOException, IWProtocolException {
-        CPCommandMsg msg= new CPCommandMsg();
+
 
         if (cookie < 0) {
             // Request a new cookie from server
@@ -65,7 +65,10 @@ public class CPProtocol extends Protocol {
         }
 
         // Task 1.2.1: complete send method
-
+        this.id++;
+        CPCommandMsg msg = new CPCommandMsg(this.cookie, this.id, s);
+        msg.create(null);
+        this.PhyProto.send(new String(msg.getDataBytes()), this.PhyConfigCommandServer);
     }
 
     @Override
@@ -73,6 +76,37 @@ public class CPProtocol extends Protocol {
         CPMsg cpmIn = null;
 
         // Task 1.2.1: implement receive method
+        try {
+            while (true) { // Loop to handle unexpected messages
+                Msg in = this.PhyProto.receive(3000); // a. Wait for 3 seconds
+
+                // Ignore messages not for this protocol
+                if (((PhyConfiguration) in.getConfiguration()).getPid() != proto_id.CP) {
+                    continue;
+                }
+
+                try {
+                    // b. Parse the message
+                    cpmIn = (CPMsg) new CPMsg().parse(in.getData());
+
+                    // c. Check if it's a command response and if the ID matches
+                    if (cpmIn instanceof CPCommandResponseMsg) {
+                        CPCommandResponseMsg responseMsg = (CPCommandResponseMsg) cpmIn;
+                        if (responseMsg.getId() == this.id) {
+                            // d, e. ID matches, return the message to the client
+                            return responseMsg;
+                        }
+                    }
+                    // If not a matching response, discard and continue waiting
+                } catch (IllegalMsgException e) {
+                    // b. If parser throws an exception, discard the message
+                    continue;
+                }
+            }
+        } catch (SocketTimeoutException e) {
+            // Timeout occurred, return null or throw an exception as per higher-level logic needs.
+            // For now, returning null as cpmIn is null by default.
+        }
 
         // Task 2.1.1: enhance receive method
 
